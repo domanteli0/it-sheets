@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+
+<head lang="en">
+	<meta charset="UTF-8">
+	<link rel="stylesheet" href="style.css" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.js"></script>
+</head>
+
+<body>
+	<h1> it-sheets </h1>
+	<table contenteditable id="mainTable">
+		<tbody>
+		</tbody>
+	</table>
+	<script type="module">
+		import { init } from './src/state.js';
+		init();
+	</script>
+</body>

@@ -1,0 +1,31 @@
+:root {
+    --table-horizontal-inner-spacing: 1%;
+    --table-vertical-inner-spacing: 1%;
+    --background-color-primary: rgb(45, 45, 81);
+    --background-color-secondary: rgb(129, 131, 166);
+    --text-color-primary: #ffffff;
+}
+
+* {
+    background-color: var(--background-color-primary);
+    font-family: 'Gill Sans', sans-serif;
+    color: var(--text-color-primary);
+}
+
+td,
+th {
+    padding: 1% 1%;
+}
+
+td {
+    border: 2px solid var(--text-color-primary);
+    background-color: var(--background-color-secondary);
+    min-width:2rem;
+    min-height: 1em;
+}
+
+table {
+    border-collapse: collapse;
+
+    /* border-style: inset; */
+}
