@@ -1,15 +1,40 @@
 <!DOCTYPE html>
 
+<!-- Vietas kuriose įgyvendinau reikalavimus pažymėjau [1.a] arba [1.a 1/3] jeigu implementacija tęsiasi per kelias vietas ar jų yra keletas, dalis reikalavimų bus įgyvendinta ir script.js faile -->
+
+<!-- 1. Formos laukų validavimas: -->
+<!-- a. Įvedimo laukas, kuriame kažkas turi būti įvesta (kuris negali būti paliktas tuščias) -->
+<!-- b. Įvedimo laukas, kuriame turi būti įvestas sveikas teigiamas skaičius -->
+
+<!-- 2. HTML puslapio elementų paslėpimas/parodymas (ne išmetimas) panaudojant CSS savybę display, priklausomai nuo to, kas įvesta kokiame nors formos lauke (būtina naudoti jQuery biblioteką); -->
+
+<!-- 3. HTML puslapio dinaminis turinio modifikavimas (būtina naudoti jQuery biblioteką): -->
+<!-- a. Egzistuojančių HTML dokumento žymių tekstinio turinio pakeitimas (pvz. paragrafo
+teksto pakeitimas) -->
+<!-- b. Egzistuojančių žymių stiliaus pakeitimas (atributui style priskiriant naują reikšmę) -->
+<!-- c. Egzistuojančių žymių išmetimas (pvz. ištrinti įvedimo lauke numeriu nurodytą
+paragrafą) -->
+<!-- d. Naujų žymių įterpimas (pvz. teksto gale pridėti paragrafą su tekstu, įvestu įvedimo
+lauke) -->
+
+<!-- 4. Asinchroninis komunikavimas su nutolusiu serveriu: -->
+<!-- a. Įvedimo formoje pateiktų duomenų serializavimas JSON formatu ir patalpinimas
+vienoje iš šių sistemų (naudojantis pateikiamu API): i. https://jsonblob.com/api -->
+<!-- b. Duomenų (JSON formatu) išsitraukimas iš aukščiau nurodytų sistemų -->
+
 <head lang="en">
 	<meta charset="UTF-8">
 	<link rel="stylesheet" href="style.css" />
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.js"></script>
+	<script src="script.js"></script>
 </head>
 
 <body>
 	<h1 id="title-heading"> it-sheets </h1>
 
 	<form id="update_title">
+		<!-- [1.a 1/2] -->
+		<!-- įvesties lauko deklaracija -->
 		<div class="title-form">
 			<label for="title">Change title to:</label>
 			<input type="text" name="title" id="title">
@@ -17,6 +42,8 @@
 				than one character</div>
 		</div>
 
+		<!-- [1.b 1/2] -->
+		<!-- įvesties lauko deklaracija -->
 		<div class="title-form">
 			<label for="id">Version: </label>
 			<input type="number" name="id" id="id">
@@ -33,10 +60,9 @@
 		</tbody>
 	</table>
 
-	<script type="module">
-		import { sendUpdate } from './src/state.js';
-		import { Coordinate } from './src/coordinate.js'
-
+	<script>
+		// [3.c]
+		// visi laukai išvalomi kai paspaudžiamas "Clear all" mygtukas
 		$("#clear-all").on('click', _ => {
 			$("td").toArray().forEach(el => {
 				const jel = jQuery(el);
@@ -51,8 +77,6 @@
 	</script>
 
 	<script type="module">
-		import { sendUpdate } from './src/state.js';
-
 		$("#update_title_submit").on('click', () => {
 			const normalBackgroundColor = "rgb(45, 45, 81)";
 			const red = "rgb(204, 0, 0)";
@@ -64,25 +88,47 @@
 
 			let error = false;
 
+			// [1.b 2/2]
+			// teigiamo sveiko skaičiaus validacija
 			if (!(id > 0)) {
 				error = true;
+
+				// [3.b 1/4]
+				// pakeičiamas stilius kai atsiranda klaida
 				$("#id").css("background-color", red)
+				// [2 1/2]
+				// elementas "atslėpiamas" jeigu yra klaida
 				$("#id-form-error").css("display", "table-cell")
 			} else {
-				$("#id").css("background-color", normalBackgroundColor)
+				// [3.b 2/4]
+				// stilius atstatomas, kai klaida pašalinta
+				$("#id").css("background-color", '')
+				// elementas paslėpiamas jeigu klaidos nebėra
 				$("#id-form-error").css("display", "none")
 			}
 
+			// [1.a 2/2]
+			// lauko ilgio validacija
 			if (title.length == 0) {
 				error = true;
+
+				// [3.b 3/4]
+				// pakeičiamas stilius kai atsiranda klaida
 				$("#title").css("background-color", red)
+				// [2 2/2]
+				// elementas "atslėpiamas" jeigu yra klaida
 				$("#title-form-error").css("display", "table-cell")
 			} else {
-				$("#title").css("background-color", normalBackgroundColor)
+				// [3.b 4/4]
+				// stilius atstatomas, kai klaida pašalinta
+				$("#title").css("background-color", '')
+				// elementas paslėpiamas jeigu klaidos nebėra
 				$("#title-form-error").css("display", "none")
 			}
 
 			if (!error) {
+				// [4.a]
+				// patalpinami nauji duomenys
 				$.post({
 					url: "/update_title",
 					dataType: 'json',
@@ -92,7 +138,6 @@
 						id: id,
 
 					}),
-					// error: () => { alert("Failed to update the title") },
 				})
 
 			}
@@ -101,9 +146,7 @@
 		});
 	</script>
 
-	<script type="module">
-		import { init, sendUpdate } from './src/state.js';
-		import { Coordinate } from './src/coordinate.js';
+	<script>
 		let state = init();
 
 		const config = {
@@ -130,14 +173,14 @@
 
 	</script>
 
-	<script type="module">
-		import 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.js';
-
+	<script>
 		setInterval(() => {
+			// [4.b 1/2]
+			// kas kurį laiką gaunami nauji dokumento pavadinimo duomenys
 			$.get({
 				url: '/poll_title',
 				success: (data) => {
-					console.log(data);
+					// [3.a 1/2] [4.c 2/2] tekstinis turinys pakeičiamas kai gaunamas atnaujinimas iš serverio
 					$('#title-heading').text(JSON.parse(data).title)
 				},
 				error: () => console.error("Failed to poll title"),

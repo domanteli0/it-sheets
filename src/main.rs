@@ -80,8 +80,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let (tx, _) = broadcast::channel(10);
 
     let app = Router::new()
-        .nest_service("/src", ServeDir::new("./front/src"))
         .nest_service("/style.css", ServeDir::new("./front/style.css"))
+        .nest_service("/script.js", ServeDir::new("./front/script.js"))
         .nest_service("/index.html", ServeDir::new("./front/index.html"))
         .route("/update", post(update_cell))
         .route("/update_title", post(update_title))
@@ -95,12 +95,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
             title: "New sheet".to_owned(),
         }))));
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+    // let listener1 = tokio::net::TcpListener::bind("127.0.0.1:3000")
+    //     .await
+    //     .unwrap();
+    // println!("listening on http://{:?}", listener1.local_addr()?);
+    let listener2 = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
-    println!("listening on http://{:?}", listener.local_addr()?);
+    println!("listening on http://{:?}", listener2.local_addr()?);
 
-    axum::serve(listener, app).await?;
+    axum::serve(listener2, app).await.unwrap();
 
     Ok(())
 }

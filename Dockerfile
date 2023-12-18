@@ -20,5 +20,7 @@ WORKDIR /app
 COPY --from=builder /usr/src/app/back /app/back
 COPY ./front /app/front
 
+# RUN chmod u+x ./back
+
 # Run the app
 CMD ./back
