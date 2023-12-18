@@ -66,7 +66,7 @@ function init() {
             },
             error: () => console.error("Failed to poll state"),
         })
-    }, 50);
+    }, 200);
 
     return initState;
 }
