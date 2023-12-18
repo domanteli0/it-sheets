@@ -1,37 +1,29 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::num::NonZeroU32;
-use std::os::unix::net::UnixListener;
 use std::sync::Arc;
 
-use axum::body::Body;
 use axum::debug_handler;
-use axum::extract::Query;
-use axum::extract::ws::Message;
-use axum::extract::ws::WebSocket;
-use axum::extract::{ws, State, WebSocketUpgrade};
 use axum::http::StatusCode;
-use axum::response::Response;
 use axum::routing::post;
 use axum::Extension;
 use axum::Json;
 use axum::{response::IntoResponse, response::Redirect, routing::get, Router};
-use serde;
-use serde::Deserialize;
-use serde::Serialize;
-use serde_json::to_string;
 use tokio;
 use tokio::sync::broadcast;
 use tokio::sync::RwLock;
 use tower_http::services::ServeDir;
 use tower_http::trace::{self, TraceLayer};
-use tracing::error;
+
+// tracing
 use tracing::info;
 use tracing::Level;
-use uuid::Uuid;
 
-//allows to split the websocket stream into separate TX and RX branches
-use futures::{sink::SinkExt, stream::StreamExt};
+// serde
+use serde;
+use serde::Deserialize;
+use serde::Serialize;
+use serde_json::to_string;
 
 #[derive(serde::Serialize, Clone, Debug)]
 struct CellUpdate {

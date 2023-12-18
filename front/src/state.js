@@ -42,7 +42,26 @@ export function init() {
         })
     }, 2000);
 
-
     return initState;
 }
 
+export function sendUpdate(
+    coordinate,
+    text
+) {
+
+    let payload = JSON.stringify({
+        coordinate: {
+            row: coordinate.row,
+            col: coordinate.col,
+        },
+        text: text,
+    });
+
+    $.post({
+        url: '/update',
+        method: 'POST',
+        contentType: "application/json",
+        data: payload
+    });
+}
