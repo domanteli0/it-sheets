@@ -51,9 +51,25 @@ struct Coordinate {
 struct AppState {
     matrix: HashMap<Coordinate, String>,
     tx: broadcast::Sender<CellUpdate>,
+    title: String,
 }
 
 type SharedState = Arc<RwLock<AppState>>;
+
+// TODO:
+// - Title
+//      - Įvedimo laukas, kuriame kažkas turi būti įvesta (kuris negali būti paliktas tuščias)
+// - Add natural number cell type
+//      - Įvedimo laukas, kuriame turi būti įvestas sveikas teigiamas skaičius
+//      - HTML puslapio elementų paslėpimas/parodymas (ne išmetimas) panaudojant CSS savybę display, priklausomai nuo to, kas įvesta kokiame nors formos lauke (būtina naudoti jQuery biblioteką);
+//      - Egzistuojančių žymių stiliaus pakeitimas (atributui style priskiriant naują reikšmę) (error out a cell on non-natural number)
+// - Add an end-point for cell clear
+//      - Egzistuojančių žymių išmetimas (pvz. ištrinti įvedimo lauke numeriu nurodytą paragrafą)
+// - jquerysize cell insert
+//      - Naujų žymių įterpimas (pvz. teksto gale pridėti paragrafą su tekstu, įvestu įvedimo lauke)
+// - use polling for title updates
+// - reintroduce websockets for cell updates
+// - don't resend the same data
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -74,11 +90,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .nest_service("/index.html", ServeDir::new("../front/index.html"))
         .route("/update", post(update_cell))
         .route("/poll_state", get(poll_state))
+        .route("/poll_title", get(poll_title))
         .route("/", get(|| async { Redirect::permanent("index.html") }))
         .layer(trace_layer)
         .layer(Extension(Arc::new(RwLock::new(AppState {
             matrix: HashMap::new(),
             tx,
+            title: "New sheet".to_owned()
         }))));
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
@@ -130,4 +148,9 @@ async fn poll_state(state: Extension<SharedState>) -> impl IntoResponse {
             .map(|(coordinate, text)| CellUpdate { coordinate, text })
             .collect::<Vec<_>>(),
     }).unwrap()
+}
+
+async fn poll_title(state: Extension<SharedState>) -> impl IntoResponse {
+    let state = state.read().await;
+    state.title.clone()
 }

@@ -39,7 +39,16 @@ export function init() {
                 })
             }
         })
-    }, 10);
+    }, 100);
+
+    setInterval(() => {
+        $.get({
+            url: '/poll_title',
+            success: (data) => {
+                $('#title').text(data)
+            }
+        })
+    }, 1000);
 
 
     return initState;
