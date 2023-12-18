@@ -105,9 +105,12 @@ async fn update_cell(
         &req.text[..]
     );
     state.matrix.insert(req.coordinate, req.text.clone());
-    
+
     let tx = state.tx.clone();
-    tx.send(CellUpdate { coordinate: req.coordinate, text: req.text });
+    tx.send(CellUpdate {
+        coordinate: req.coordinate,
+        text: req.text,
+    });
 
     StatusCode::OK
 }
@@ -115,12 +118,12 @@ async fn update_cell(
 async fn handle_new_conn(ws: WebSocketUpgrade, state: Extension<SharedState>) -> impl IntoResponse {
     ws.on_failed_upgrade(|error| error!("Failed to upgrade WebSocket connection:\n{:?}", error))
         .on_upgrade(|web_socket| async move {
+            // declare needed variables
             let (mut sender, _) = web_socket.split();
-
             sender.send(Message::Ping(vec![])).await.unwrap();
-
             let state = state.read().await;
 
+            // send initial state
             for (coordinate, text) in state.matrix.iter() {
                 sender
                     .send(Message::Text(
@@ -133,6 +136,20 @@ async fn handle_new_conn(ws: WebSocketUpgrade, state: Extension<SharedState>) ->
                     .await
                     .unwrap();
             }
+
+            // send updates
+            let mut rx = state.tx.subscribe();
+
+            // spawn a task which receives updates
+            // and relays them to other clients
+            let mut _send_task = tokio::spawn(async move {
+                while let Ok(msg) = rx.recv().await {
+                    
+                    if sender.send(Message::Text(to_string(&msg).unwrap())).await.is_err() {
+                        break;
+                    }
+                }
+            });
 
             ()
         })

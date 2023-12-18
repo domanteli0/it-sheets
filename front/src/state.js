@@ -13,10 +13,6 @@ const eventToNode = (eventData) => {
     return document.createTextNode(eventData.text);
 }
 
-export function onCellInput(event) {
-    alert(event.target.innerHtml);
-}
-
 export function init() {
     let table = document.getElementById("mainTable");
 
@@ -33,7 +29,6 @@ export function init() {
     let socket = new WebSocket("ws://localhost:3000/ws");
 
     socket.onmessage = (event) => {
-        alert(event.data.toString());
         let eventData = JSON.parse(event.data);
         let row = eventData.coordinate.row;
         let col = eventData.coordinate.col;
