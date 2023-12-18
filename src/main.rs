@@ -95,15 +95,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
             title: "New sheet".to_owned(),
         }))));
 
+    // for local-host
     // let listener1 = tokio::net::TcpListener::bind("127.0.0.1:3000")
     //     .await
     //     .unwrap();
     // println!("listening on http://{:?}", listener1.local_addr()?);
+    // axum::serve(listener1, app).await.unwrap();
+
+    // for remote deployment
     let listener2 = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
     println!("listening on http://{:?}", listener2.local_addr()?);
-
     axum::serve(listener2, app).await.unwrap();
 
     Ok(())
