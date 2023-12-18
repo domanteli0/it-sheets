@@ -13,15 +13,15 @@ const eventToNode = (eventData) => {
 }
 
 export function init() {
-    let table = document.getElementById("mainTable");
+    let table = $("#mainTable");
 
     RangeIter(initState.rows).forEach((row_no) => {
-        let row = table.insertRow(row_no);
+        let row = $("<tr>")
         RangeIter(initState.cols).forEach((col_no) => {
-            let cell = row.insertCell(col_no);
-
-            cell.id = new Coordinate(row_no, col_no).toId();
+            let cell = $("<td>").attr('id', new Coordinate(row_no, col_no).toId())
+            row.append(cell);
         });
+        table.append(row);
     });
 
     setInterval(() => {

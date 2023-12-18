@@ -38,7 +38,7 @@
 		import { Coordinate } from './src/coordinate.js'
 
 		$("#clear-all").on('click', _ => {
-			$("mainTable td").toArray().forEach(el => {
+			$("td").toArray().forEach(el => {
 				const jel = jQuery(el);
 				console.log(jel.text());
 				sendUpdate(
