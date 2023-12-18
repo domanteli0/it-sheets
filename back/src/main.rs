@@ -1,46 +1,54 @@
+use std::collections::HashMap;
 use std::error::Error;
 use std::os::unix::net::UnixListener;
+use std::sync::Arc;
 
 use axum::body::Body;
+use axum::debug_handler;
 use axum::extract::ws::Message;
 use axum::extract::ws::WebSocket;
 use axum::extract::{ws, State, WebSocketUpgrade};
+use axum::http::StatusCode;
 use axum::response::Response;
+use axum::routing::post;
+use axum::Extension;
 use axum::Json;
 use axum::{response::IntoResponse, response::Redirect, routing::get, Router};
-use log::error;
 use serde;
+use serde::Deserialize;
 use serde_json::to_string;
 use tokio;
+use tokio::sync::broadcast;
+use tokio::sync::RwLock;
 use tower_http::services::ServeDir;
 use tower_http::trace::{self, TraceLayer};
+use tracing::error;
+use tracing::info;
 use tracing::Level;
 use uuid::Uuid;
 
 //allows to split the websocket stream into separate TX and RX branches
 use futures::{sink::SinkExt, stream::StreamExt};
 
-#[derive(serde::Serialize)]
-struct ConnectResponse {
-    id: Uuid,
-}
-
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, Clone, Debug)]
 struct CellUpdate {
-    coordinates: Coordinates,
+    coordinate: Coordinate,
     text: String,
 }
 
-#[derive(serde::Serialize)]
-struct Coordinates {
+#[derive(Clone, Copy, serde::Serialize, serde::Deserialize, PartialEq, Eq, Hash, Debug)]
+struct Coordinate {
     col: u16,
     row: u16,
 }
 
 #[derive(Clone)]
 struct AppState {
-    users: Vec<Uuid>,
+    matrix: HashMap<Coordinate, String>,
+    tx: broadcast::Sender<CellUpdate>,
 }
+
+type SharedState = Arc<RwLock<AppState>>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -53,14 +61,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
         .on_response(trace::DefaultOnResponse::new().level(Level::INFO));
 
+    let (tx, _) = broadcast::channel(10);
+
     let app = Router::new()
         .nest_service("/src", ServeDir::new("../front/src"))
         .nest_service("/style.css", ServeDir::new("../front/style.css"))
         .nest_service("/index.html", ServeDir::new("../front/index.html"))
+        .route("/update", post(update_cell))
         .route("/ws", get(handle_new_conn))
         .route("/", get(|| async { Redirect::permanent("index.html") }))
         .layer(trace_layer)
-        .with_state(AppState { users: vec![] });
+        .layer(Extension(Arc::new(RwLock::new(AppState {
+            matrix: HashMap::new(),
+            tx,
+        }))));
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
@@ -72,9 +86,35 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn handle_new_conn(ws: WebSocketUpgrade, State(state): State<AppState>) -> impl IntoResponse {
+#[derive(Deserialize)]
+struct UpdateCellRequest {
+    coordinate: Coordinate,
+    text: String,
+}
+
+#[debug_handler]
+async fn update_cell(
+    state: Extension<SharedState>,
+    Json(req): Json<UpdateCellRequest>,
+) -> impl IntoResponse {
+    let mut state = state.write().await;
+
+    info!(
+        "UPDATE:  to: {:?}  with: {:?}",
+        req.coordinate,
+        &req.text[..]
+    );
+    state.matrix.insert(req.coordinate, req.text.clone());
+    
+    let tx = state.tx.clone();
+    tx.send(CellUpdate { coordinate: req.coordinate, text: req.text });
+
+    StatusCode::OK
+}
+
+async fn handle_new_conn(ws: WebSocketUpgrade, state: Extension<SharedState>) -> impl IntoResponse {
     ws.on_failed_upgrade(|error| error!("Failed to upgrade WebSocket connection:\n{:?}", error))
-        .on_upgrade(|mut web_socket| async move {
+        .on_upgrade(|web_socket| async move {
             // web_socket
             //     .send(ws::Message::Text(
             //         to_string(&ConnectResponse { id: Uuid::new_v4() }).unwrap(),
@@ -82,36 +122,25 @@ async fn handle_new_conn(ws: WebSocketUpgrade, State(state): State<AppState>) ->
             //     .await
             //     .unwrap();
 
-            let (mut sender, mut receiver) = web_socket.split();
+            let (mut sender, _) = web_socket.split();
 
-            sender
-                .send(Message::Text(
-                    to_string(&CellUpdate {
-                        coordinates: Coordinates { col: 1, row: 1 },
-                        text: String::from("Hello, world!"),
-                    })
-                    .unwrap(),
-                ))
-                .await.unwrap();
+            sender.send(Message::Ping(vec![])).await.unwrap();
 
-            // if let Some(msg) = web_socket.recv().await {
-            //     match msg {
-            //         Ok(Message::Text(event)) => {
-            //             web_socket.send(Message::Text(to_string(
-            //                 &CellUpdate {
-            //                     coordinates: Coordinates {
-            //                         col: 1,
-            //                         row: 1,
-            //                     },
-            //                     text: String::from("Hello, world!")
-            //                 }
-            //             ).unwrap()
-            //         )).await.unwrap()
-            //         },
-            //         Ok(_) => todo!(),
-            //         Err(_) => todo!(),
-            //     }
-            // }
+            let state = state.read().await;
+
+            for (coordinate, text) in state.matrix.iter() {
+                sender
+                    .send(Message::Text(
+                        to_string(&CellUpdate {
+                            coordinate: *coordinate,
+                            text: text.clone(),
+                        })
+                        .unwrap(),
+                    ))
+                    .await
+                    .unwrap();
+            }
+
             ()
         })
 }

@@ -20,7 +20,7 @@ th {
 td {
     border: 2px solid var(--text-color-primary);
     background-color: var(--background-color-secondary);
-    min-width:2rem;
+    min-width: 2rem;
     min-height: 1em;
 }
 

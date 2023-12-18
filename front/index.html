@@ -7,12 +7,68 @@
 
 <body>
 	<h1> it-sheets </h1>
-	<table contenteditable id="mainTable">
-		<tbody>
+	<table id="mainTable">
+		<tbody contenteditable="true">
 		</tbody>
 	</table>
 	<script type="module">
 		import { init } from './src/state.js';
-		init();
+		import { Coordinate } from './src/coordinate.js';
+		let state = init();
+		// alert(document.querySelector('table').innerHTML);
+		// $('textarea').on('input', function (e) {
+		// 	let socket = state.socket;
+		// 	alert(e.target);
+		// 	// Do something with the "change"-like event
+		// });
+
+		const config = {
+			attributes: false,
+			childList: false,
+			subtree: true,
+			characterData: true,
+		};
+
+		const observer = new MutationObserver((mutRecords) => {
+			mutRecords.forEach(record => {
+				$(record.target.parentElement.id).ready(() => {
+					const coordinates = Coordinate.fromId(record.target.parentElement.id);
+					let payload = JSON.stringify({
+						coordinate: {
+							row: coordinates.row,
+							col: coordinates.col,
+						},
+						text: record.target.data,
+					});
+
+					console.log(payload);
+
+					$.post({
+						url: '/update',
+						method: 'POST',
+						contentType: "application/json",
+						data: payload
+					});
+				})
+				console.log(record.target.parentElement.id);
+				console.log(record.target.data);
+
+			});
+		});
+
+		$('table').each((_, el) => {
+			observer.observe(el, config);
+		});
+
+		// $('tbody').on('input', function (e) {
+		// 	let socket = state.socket;
+		// 	alert(e.target.innerHTML);
+		// 	// Do something with the "change"-like event
+		// });
+		// document.querySelector('table').addEventListener('input', (e) => {
+		// 	alert('content edited');
+		// 	return true;
+		// 	// Do something with the "change"-like event
+		// });
 	</script>
 </body>
