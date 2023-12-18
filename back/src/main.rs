@@ -36,6 +36,11 @@ struct CellUpdate {
     text: String,
 }
 
+#[derive(serde::Serialize, Clone, Debug)]
+struct ManyCellUpdates {
+    updates: Vec<CellUpdate>,
+}
+
 #[derive(Clone, Copy, serde::Serialize, serde::Deserialize, PartialEq, Eq, Hash, Debug)]
 struct Coordinate {
     col: u16,
@@ -68,7 +73,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .nest_service("/style.css", ServeDir::new("../front/style.css"))
         .nest_service("/index.html", ServeDir::new("../front/index.html"))
         .route("/update", post(update_cell))
-        .route("/ws", get(handle_new_conn))
+        .route("/poll_state", get(poll_state))
         .route("/", get(|| async { Redirect::permanent("index.html") }))
         .layer(trace_layer)
         .layer(Extension(Arc::new(RwLock::new(AppState {
@@ -115,42 +120,14 @@ async fn update_cell(
     StatusCode::OK
 }
 
-async fn handle_new_conn(ws: WebSocketUpgrade, state: Extension<SharedState>) -> impl IntoResponse {
-    ws.on_failed_upgrade(|error| error!("Failed to upgrade WebSocket connection:\n{:?}", error))
-        .on_upgrade(|web_socket| async move {
-            // declare needed variables
-            let (mut sender, _) = web_socket.split();
-            sender.send(Message::Ping(vec![])).await.unwrap();
-            let state = state.read().await;
-
-            // send initial state
-            for (coordinate, text) in state.matrix.iter() {
-                sender
-                    .send(Message::Text(
-                        to_string(&CellUpdate {
-                            coordinate: *coordinate,
-                            text: text.clone(),
-                        })
-                        .unwrap(),
-                    ))
-                    .await
-                    .unwrap();
-            }
-
-            // send updates
-            let mut rx = state.tx.subscribe();
-
-            // spawn a task which receives updates
-            // and relays them to other clients
-            let mut _send_task = tokio::spawn(async move {
-                while let Ok(msg) = rx.recv().await {
-                    
-                    if sender.send(Message::Text(to_string(&msg).unwrap())).await.is_err() {
-                        break;
-                    }
-                }
-            });
-
-            ()
-        })
+async fn poll_state(state: Extension<SharedState>) -> impl IntoResponse {
+    let state = state.read().await;
+    to_string(&ManyCellUpdates {
+        updates: state
+            .matrix
+            .clone()
+            .into_iter()
+            .map(|(coordinate, text)| CellUpdate { coordinate, text })
+            .collect::<Vec<_>>(),
+    }).unwrap()
 }

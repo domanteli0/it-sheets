@@ -5,7 +5,6 @@ import 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.js';
 let initState = {
     cols: 10,
     rows: 10,
-    socket: null,
 }
 
 const eventToNode = (eventData) => {
@@ -21,22 +20,26 @@ export function init() {
         RangeIter(initState.cols).forEach((col_no) => {
             let cell = row.insertCell(col_no);
 
-            cell.id  = new Coordinate(row_no, col_no).toId();
+            cell.id = new Coordinate(row_no, col_no).toId();
         });
     });
 
-    // it seems that only safari supports bare "/ws" url
-    let socket = new WebSocket("ws://localhost:3000/ws");
+    setInterval(() => {
+        $.get({
+            url: '/poll_state',
+            success: (data) => {
+                let updates = JSON.parse(data).updates;
 
-    socket.onmessage = (event) => {
-        let eventData = JSON.parse(event.data);
-        let row = eventData.coordinate.row;
-        let col = eventData.coordinate.col;
+                updates.forEach((cellUpdate) => {
 
-        $("#" + new Coordinate(row, col).toId()).html(eventToNode(eventData));
-    }
+                    let row = cellUpdate.coordinate.row;
+                    let col = cellUpdate.coordinate.col;
 
-    initState.socket = socket;
+                    $("#" + new Coordinate(row, col).toId()).html(eventToNode(cellUpdate));
+                })
+            }
+        })
+    }, 10);
 
 
     return initState;
