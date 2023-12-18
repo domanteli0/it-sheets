@@ -24,3 +24,27 @@ table {
 
     /* border-style: inset; */
 }
+
+/* from input field alignment */
+form {
+    display: table;
+    padding-bottom: 2%;
+}
+
+div.title-form {
+    display: table-row;
+}
+
+label {
+    display: table-cell;
+    padding: 1% 5pt;
+}
+
+input {
+    display: table-cell;
+}
+
+div.form-error {
+    display: table-cell;
+    padding-left: 1%;
+}

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::error::Error;
+use std::num::NonZeroU32;
 use std::os::unix::net::UnixListener;
 use std::sync::Arc;
 
@@ -17,6 +18,7 @@ use axum::Json;
 use axum::{response::IntoResponse, response::Redirect, routing::get, Router};
 use serde;
 use serde::Deserialize;
+use serde::Serialize;
 use serde_json::to_string;
 use tokio;
 use tokio::sync::broadcast;
@@ -143,7 +145,7 @@ async fn update_cell(
 #[derive(Deserialize, Debug)]
 struct UpdateTitleParams {
     title: String,
-    id: u32,
+    id: NonZeroU32,
 }
 
 #[debug_handler]
@@ -154,8 +156,7 @@ async fn update_title(
     let mut state = state.write().await;
 
     info!("UPDATE: to title with: {:?}", req);
-    info!("UPDATE: to title with: {:?}", req.id);
-    state.title = req.title;
+    state.title = req.title.trim().to_string() + "-" + req.id.to_string().as_ref();
     StatusCode::OK
 }
 
@@ -172,7 +173,12 @@ async fn poll_state(state: Extension<SharedState>) -> impl IntoResponse {
     .unwrap()
 }
 
+#[derive(Serialize, Debug)]
+struct PollTitleResponse {
+    title: String,
+}
+
 async fn poll_title(state: Extension<SharedState>) -> impl IntoResponse {
     let state = state.read().await;
-    state.title.clone()
+    to_string(&PollTitleResponse { title: state.title.clone() }).unwrap()
 }

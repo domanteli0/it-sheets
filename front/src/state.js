@@ -37,18 +37,10 @@ export function init() {
 
                     $("#" + new Coordinate(row, col).toId()).html(eventToNode(cellUpdate));
                 })
-            }
+            },
+            error: () => console.error("Failed to poll state"),
         })
-    }, 100);
-
-    setInterval(() => {
-        $.get({
-            url: '/poll_title',
-            success: (data) => {
-                $('#title').text(data)
-            }
-        })
-    }, 1000);
+    }, 2000);
 
 
     return initState;

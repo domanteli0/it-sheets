@@ -6,16 +6,20 @@
 </head>
 
 <body>
-	<h1 id="title"> it-sheets </h1>
+	<h1 id="title-heading"> it-sheets </h1>
 
 	<form id="update_title">
-		<label for="title">Change title to:</label>
-		<input type="text" name="title" id="title">
-		<br>
+		<div class="title-form">
+			<label for="title">Change title to:</label>
+			<input type="text" name="title" id="title">
+			<div class="form-error" id="title-form-error" style="display: none; color: #f2b3b5"> Title must be longer than one character</div>
+		</div>
 
-		<label for="id">Id: </label>
-		<input type="number" name="id" id="id">
-		<br>
+		<div class="title-form">
+			<label for="id">Version: </label>
+			<input type="number" name="id" id="id">
+			<div class="form-error" style="display: none; color: #f2b3b5" id="id-form-error"> Version number must be greater than 0</div>
+		</div>
 
 		<input type="button" id="update_title_submit" name="submit" value="submit">
 	</form>
@@ -27,19 +31,50 @@
 
 	<script type="module">
 		import 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.js';
-		$("#update_title_submit").on('click', () => {
-			alert($("#update_title").serialize());
-			$.post({
-				url: "/update_title",
-				dataType: 'json',
-				contentType: 'application/json',
-				data: JSON.stringify({
-					title: $("#update_title").find('input[id="title"]').val(),
-					id: Number($("#update_title").find('input[id="id"]').val()),
 
-				}),
-				error: () => { alert("Failed to update the title") },
-			})
+		$("#update_title_submit").on('click', () => {
+			const normalBackgroundColor = "rgb(45, 45, 81)";
+			const red = "rgb(204, 0, 0)";
+
+			const title_el = $("#update_title").find('input[id="title"]');
+			const id_el = $("#update_title").find('input[id="id"]');
+			const title = title_el.val();
+			const id = Number(id_el.val());
+
+			let error = false;
+
+			if (!(id > 0)) {
+				error = true;
+				$("#id").css("background-color", red)
+				$("#id-form-error").css("display", "table-cell")
+			} else {
+				$("#id").css("background-color", normalBackgroundColor)
+				$("#id-form-error").css("display", "none")
+			}
+
+			if (title.length == 0) {
+				error = true;
+				$("#title").css("background-color", red)
+				$("#title-form-error").css("display", "table-cell")
+			} else {
+				$("#title").css("background-color", normalBackgroundColor)
+				$("#title-form-error").css("display", "none")
+			}
+
+			if (!error) {
+				$.post({
+					url: "/update_title",
+					dataType: 'json',
+					contentType: 'application/json',
+					data: JSON.stringify({
+						title: title,
+						id: id,
+
+					}),
+					// error: () => { alert("Failed to update the title") },
+				})
+
+			}
 		});
 	</script>
 
@@ -86,5 +121,20 @@
 			observer.observe(el, config);
 		});
 
+	</script>
+
+	<script type="module">
+		import 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.js';
+
+		setInterval(() => {
+			$.get({
+				url: '/poll_title',
+				success: (data) => {
+					console.log(data);
+					$('#title-heading').text(JSON.parse(data).title)
+				},
+				error: () => console.error("Failed to poll title"),
+			})
+		}, 1000);
 	</script>
 </body>
