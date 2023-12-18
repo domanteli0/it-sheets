@@ -12,11 +12,6 @@
     color: var(--text-color-primary);
 }
 
-td,
-th {
-    padding: 1% 1%;
-}
-
 td {
     border: 2px solid var(--text-color-primary);
     background-color: var(--background-color-secondary);

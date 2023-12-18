@@ -15,13 +15,7 @@
 		import { init } from './src/state.js';
 		import { Coordinate } from './src/coordinate.js';
 		let state = init();
-		// alert(document.querySelector('table').innerHTML);
-		// $('textarea').on('input', function (e) {
-		// 	let socket = state.socket;
-		// 	alert(e.target);
-		// 	// Do something with the "change"-like event
-		// });
-
+		
 		const config = {
 			attributes: false,
 			childList: false,
@@ -60,15 +54,5 @@
 			observer.observe(el, config);
 		});
 
-		// $('tbody').on('input', function (e) {
-		// 	let socket = state.socket;
-		// 	alert(e.target.innerHTML);
-		// 	// Do something with the "change"-like event
-		// });
-		// document.querySelector('table').addEventListener('input', (e) => {
-		// 	alert('content edited');
-		// 	return true;
-		// 	// Do something with the "change"-like event
-		// });
 	</script>
 </body>

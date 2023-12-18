@@ -115,13 +115,6 @@ async fn update_cell(
 async fn handle_new_conn(ws: WebSocketUpgrade, state: Extension<SharedState>) -> impl IntoResponse {
     ws.on_failed_upgrade(|error| error!("Failed to upgrade WebSocket connection:\n{:?}", error))
         .on_upgrade(|web_socket| async move {
-            // web_socket
-            //     .send(ws::Message::Text(
-            //         to_string(&ConnectResponse { id: Uuid::new_v4() }).unwrap(),
-            //     ))
-            //     .await
-            //     .unwrap();
-
             let (mut sender, _) = web_socket.split();
 
             sender.send(Message::Ping(vec![])).await.unwrap();
