@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use axum::body::Body;
 use axum::debug_handler;
+use axum::extract::Query;
 use axum::extract::ws::Message;
 use axum::extract::ws::WebSocket;
 use axum::extract::{ws, State, WebSocketUpgrade};
@@ -89,6 +90,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .nest_service("/style.css", ServeDir::new("../front/style.css"))
         .nest_service("/index.html", ServeDir::new("../front/index.html"))
         .route("/update", post(update_cell))
+        .route("/update_title", post(update_title))
         .route("/poll_state", get(poll_state))
         .route("/poll_title", get(poll_title))
         .route("/", get(|| async { Redirect::permanent("index.html") }))
@@ -96,7 +98,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .layer(Extension(Arc::new(RwLock::new(AppState {
             matrix: HashMap::new(),
             tx,
-            title: "New sheet".to_owned()
+            title: "New sheet".to_owned(),
         }))));
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
@@ -130,11 +132,30 @@ async fn update_cell(
     state.matrix.insert(req.coordinate, req.text.clone());
 
     let tx = state.tx.clone();
-    tx.send(CellUpdate {
+    let _ = tx.send(CellUpdate {
         coordinate: req.coordinate,
         text: req.text,
     });
 
+    StatusCode::OK
+}
+
+#[derive(Deserialize, Debug)]
+struct UpdateTitleParams {
+    title: String,
+    id: u32,
+}
+
+#[debug_handler]
+async fn update_title(
+    state: Extension<SharedState>,
+    Json(req): Json<UpdateTitleParams>,
+) -> impl IntoResponse {
+    let mut state = state.write().await;
+
+    info!("UPDATE: to title with: {:?}", req);
+    info!("UPDATE: to title with: {:?}", req.id);
+    state.title = req.title;
     StatusCode::OK
 }
 
@@ -147,7 +168,8 @@ async fn poll_state(state: Extension<SharedState>) -> impl IntoResponse {
             .into_iter()
             .map(|(coordinate, text)| CellUpdate { coordinate, text })
             .collect::<Vec<_>>(),
-    }).unwrap()
+    })
+    .unwrap()
 }
 
 async fn poll_title(state: Extension<SharedState>) -> impl IntoResponse {

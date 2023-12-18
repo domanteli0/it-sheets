@@ -7,15 +7,47 @@
 
 <body>
 	<h1 id="title"> it-sheets </h1>
+
+	<form id="update_title">
+		<label for="title">Change title to:</label>
+		<input type="text" name="title" id="title">
+		<br>
+
+		<label for="id">Id: </label>
+		<input type="number" name="id" id="id">
+		<br>
+
+		<input type="button" id="update_title_submit" name="submit" value="submit">
+	</form>
+
 	<table id="mainTable">
 		<tbody contenteditable="true">
 		</tbody>
 	</table>
+
+	<script type="module">
+		import 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.js';
+		$("#update_title_submit").on('click', () => {
+			alert($("#update_title").serialize());
+			$.post({
+				url: "/update_title",
+				dataType: 'json',
+				contentType: 'application/json',
+				data: JSON.stringify({
+					title: $("#update_title").find('input[id="title"]').val(),
+					id: Number($("#update_title").find('input[id="id"]').val()),
+
+				}),
+				error: () => { alert("Failed to update the title") },
+			})
+		});
+	</script>
+
 	<script type="module">
 		import { init } from './src/state.js';
 		import { Coordinate } from './src/coordinate.js';
 		let state = init();
-		
+
 		const config = {
 			attributes: false,
 			childList: false,
